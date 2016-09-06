@@ -94,10 +94,11 @@ float distance = 0.0, heading = 0.0;
 #if GPS_ON
 #include "SoftwareSerial.h"
 SoftwareSerial gps(GPS_RX, GPS_TX);
+char dmLat[10], gmLon[10], dirNS, dirEW;
 #endif
 
 #if NEO_ON
-#include "NeoPixel.h"
+#include <Adafruit_NeoPixel.h>
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(40, NEO_TX, NEO_GRB + NEO_KHZ800);
 #endif
 
@@ -282,6 +283,15 @@ void getGPSMessage(void) {
 				}
 
 				// else valid message
+				
+				// Status code check
+				if (cstr[18] != 'A') {
+					x = 0;
+					continue;
+				}
+
+
+
 				break;
 			}
 		}
