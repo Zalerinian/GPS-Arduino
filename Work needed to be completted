@@ -2,6 +2,7 @@ parse string for info
 use info for calculating distance
 use info for calculating direction
 use info from distance direction and flags to use led board
+write to the sdcard
 
 
 
