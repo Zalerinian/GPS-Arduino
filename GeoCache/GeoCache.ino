@@ -62,6 +62,10 @@ A               // Mode A=Autonomous D=differential E=Estimated
 // Required
 #include "Arduino.h"
 
+//Add
+#include<math.h>
+#include<string.h>
+
 /*
 Configuration settings.
 
@@ -165,6 +169,16 @@ float degMin2DecDeg(char *cind, char *ccor) {
 	float degrees = 0.0;
 
 	// add code here
+	size_t sz = 3;
+	float d = = std::stof(ccor, &sz);
+	float mm = std::stof(ccor.substr(sz));
+	float dd;
+
+	dd = mm / 60;
+	degrees = d + dd;
+
+	if (cind == 'S' || cind == 'W')
+		degrees = -degrees;
 
 	return(degrees);
 }
@@ -188,6 +202,11 @@ float calcDistance(float flat1, float flon1, float flat2, float flon2) {
 	float distance = 0.0;
 
 	// add code here
+	float radLatitudeDiff = (flat1 * M_PI / 180) - (flat2 * M_PI / 180);
+	float radLongitudeDiff = (flon1 * M_PI / 180) - (flon2 * M_PI / 180);
+	distance = 2 * asin((sqrt(pow(sin(radLatitudeDiff / 2), 2) + cos(flat1 * M_PI / 180) * cos(flat2 * M_PI / 180) * pow(sin(radLongitudeDiff / 2), 2))));
+	distance = distance * 3959.00 * 5280;
+	distance = round(distance * 10000000) / 10000; //im not sure about this line (maybe we dont need this line
 
 	return(distance);
 }
