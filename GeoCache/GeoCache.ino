@@ -64,7 +64,9 @@ A               // Mode A=Autonomous D=differential E=Estimated
 
 //Add
 #include<math.h>
-#include<string.h>
+#include<string>
+#include <stdio.h> 
+#include <stdlib.h> 
 
 /*
 Configuration settings.
@@ -170,14 +172,14 @@ float degMin2DecDeg(char *cind, char *ccor) {
 
 	// add code here
 	size_t sz = 3;
-	float d = = std::stof(ccor, &sz);
-	float mm = std::stof(ccor.substr(sz));
+	int d = (int)strtof(ccor,NULL) / 100;
+	float mm = strtof(ccor, NULL) - d * 100;
 	float dd;
 
 	dd = mm / 60;
 	degrees = d + dd;
 
-	if (cind == 'S' || cind == 'W')
+	if (cind == "S" || cind == "W")
 		degrees = -degrees;
 
 	return(degrees);
