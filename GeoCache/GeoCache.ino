@@ -171,7 +171,6 @@ float degMin2DecDeg(char *cind, char *ccor) {
 	float degrees = 0.0;
 
 	// add code here
-	size_t sz = 3;
 	int d = (int)strtof(ccor,NULL) / 100;
 	float mm = strtof(ccor, NULL) - d * 100;
 	float dd;
