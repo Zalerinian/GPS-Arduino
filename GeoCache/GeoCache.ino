@@ -207,7 +207,6 @@ float calcDistance(float flat1, float flon1, float flat2, float flon2) {
 	float radLongitudeDiff = (flon1 * M_PI / 180) - (flon2 * M_PI / 180);
 	distance = 2 * asin((sqrt(pow(sin(radLatitudeDiff / 2), 2) + cos(flat1 * M_PI / 180) * cos(flat2 * M_PI / 180) * pow(sin(radLongitudeDiff / 2), 2))));
 	distance = distance * 3959.00 * 5280;
-	distance = round(distance * 10000000) / 10000; //im not sure about this line (maybe we dont need this line
 
 	return(distance);
 }
@@ -228,6 +227,12 @@ float calcBearing(float flat1, float flon1, float flat2, float flon2) {
 	float bearing = 0.0;
 
 	// add code here
+	float y = sin(flon2 * M_PI / 180 - flon1 * M_PI / 180) * cos(flat2 * M_PI / 180);
+	float x = cos(flat1* M_PI / 180) * sin(flat2 * M_PI / 180) - sin(flat1* M_PI / 180) * cos(flat2 * M_PI / 180) * cos(flon2 * M_PI / 180 - flon1 * M_PI / 180);
+	bearing = (atan2(y, x) * 180) / M_PI;
+
+	//change to 0-360:
+	bearing = (bearing + 360) % 360;
 
 	return(bearing);
 }
