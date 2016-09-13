@@ -88,15 +88,15 @@ Hunt.
 char cstr[GPS_RX_BUFSIZ];
 
 // variables
-uint8_t target = 0, fileNumber = 0;
+uint8_t target = 0;
 float distance = 0.0, heading = 0.0;
-uint32_t TermTimer = 0;
+SDLib::File MyFile;
 
 #if GPS_ON
 #include "SoftwareSerial.h"
 SoftwareSerial gps(GPS_RX, GPS_TX);
 #endif
-char dmLat[11], dmLon[11], dirNS = 0, dirEW = 0;
+char dmLat[11], dmLon[11], bearing[7], dirNS = 0, dirEW = 0;
 #define GPSMESSAGETIME 250
 
 #if NEO_ON
@@ -248,6 +248,17 @@ bool parseGPS() {
 	index = found + 1;
 	found = -1;
 	dirEW = cstr[index];
+  index += 2;
+  found = finder.indexOf(",", index);
+  if (found == -1) {
+    return false;
+  }
+  index = found + 1;
+  found = finder.indexOf(",", index);
+  if (found == -1) {
+    return false;
+  }
+  memcpy(bearing, cstr + index, found - index);
 	return true;
 }
 
@@ -415,29 +426,22 @@ void setup(void) {
     Serial.println("SD card is hyper bjorked.");
     cardEnabled = false;
   } else {
-    SDLib::File count;
-    if (SD.exists("Count.txt")) {
-      count = SD.open("Count.txt", FILE_READ);
-      Serial.println("Reading data...");
-      count.readBytes((char*)&fileNumber, 1);
-      Serial.println("Clamping data...");
-      fileNumber %= 100;
-      Serial.print("The file number that will be used is: ");
-      Serial.println(fileNumber);
-      count.seek(0);
-      count.write(fileNumber + 1);
-    } else {
-      // Start at 0.
-      count = SD.open("Count.txt", FILE_WRITE);
-      Serial.println("Count file does not exist. Starting at 0!");
-      fileNumber = 0;
-      count.seek(0);
-      count.write(1);
-      count.flush();
+    for (uint8_t i = 0; i < 100; i++) {
+      char file[12] = "\0";
+      sprintf(file, "MyFile%i.txt", i);
+      if (SD.exists(file)) {
+        if (i == 99) {
+          cardEnabled = false;
+        }
+        continue;
+      } else {
+        MyFile = SD.open(file, FILE_WRITE);
+        if (!MyFile) {
+          Serial.println("Holy shitsnacks Batman, this thing fucked up again!");
+        }
+        break;
+      }
     }
-    Serial.println("Closing count file. . .");
-    count.close();
-    Serial.println("Closed count file.");
   }
 #endif
 
@@ -448,8 +452,9 @@ void setup(void) {
 	gps.println(PMTK_API_SET_FIX_CTL_1HZ);
 	gps.println(PMTK_SET_NMEA_OUTPUT_RMC);
 #endif		
-	memset(dmLat, 0, 11);
-	memset(dmLon, 0, 11);
+	memset(dmLat,  0, 11);
+	memset(dmLon,  0, 11);
+  memset(bearing, 0, 7);
 	// init target button here
 
 }
@@ -472,6 +477,9 @@ void loop(void) {
 
 #if SDC_ON
 		// write current position to SecureDigital then flush
+    if (cardEnabled) {
+      
+    }
 #endif
 
 		break;
