@@ -64,7 +64,7 @@ A               // Mode A=Autonomous D=differential E=Estimated
 
 //Add
 #include<math.h>
-#include<string>
+#include <string.h>
 #include <stdio.h> 
 #include <stdlib.h> 
 
@@ -171,8 +171,8 @@ float degMin2DecDeg(char *cind, char *ccor) {
 	float degrees = 0.0;
 
 	// add code here
-	int d = (int)strtof(ccor,NULL) / 100;
-	float mm = strtof(ccor, NULL) - d * 100;
+	int d = (int)atoi(ccor) / 100;
+	float mm = atoi(ccor) - d * 100;
 	float dd;
 
 	dd = mm / 60;
