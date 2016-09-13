@@ -90,7 +90,6 @@ char cstr[GPS_RX_BUFSIZ];
 // variables
 uint8_t target = 0;
 float distance = 0.0, heading = 0.0;
-SDLib::File MyFile;
 
 #if GPS_ON
 #include "SoftwareSerial.h"
@@ -113,6 +112,7 @@ Adafruit_NeoPixel strip = Adafruit_NeoPixel(40, NEO_TX, NEO_GRB + NEO_KHZ800);
 #if SDC_ON
 #include <SD.h>
 bool cardEnabled = true;
+SDLib::File MyFile;
 #endif
 
 /*
