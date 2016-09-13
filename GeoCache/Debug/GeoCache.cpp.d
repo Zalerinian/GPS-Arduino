@@ -13,8 +13,6 @@ C:\Users\Drew\AppData\Local\Temp\VMicroBuilds\GeoCache\uno\GeoCache.cpp.o: \
  C:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\variants\standard/pins_arduino.h \
  C:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\cores\arduino/Arduino.h \
  C:\Program\ Files\ (x86)\Microsoft\ Visual\ Studio\ 14.0\Common7\IDE\Extensions\tf0qmlza.e5u\Micro\ Platforms\default\debuggers/VM_DBG/VM_DBG.h \
- C:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\libraries\SoftwareSerial\src/SoftwareSerial.h \
- C:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\cores\arduino/Stream.h \
  C:\Program\ Files\ (x86)\Arduino\libraries\SD\src/SD.h \
  C:\Program\ Files\ (x86)\Arduino\libraries\SD\src/utility/SdFat.h \
  C:\Program\ Files\ (x86)\Arduino\libraries\SD\src/utility/Sd2Card.h \
