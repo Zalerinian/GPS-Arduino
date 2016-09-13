@@ -82,7 +82,7 @@ Hunt.
 #define TRM_ON 1		// SerialTerminal
 #define ONE_ON 0		// 1Sheeld
 #define SDC_ON 1		// SecureDigital
-#define GPS_ON 1		// GPSShield (off = simulated)
+#define GPS_ON 0		// GPSShield (off = simulated)
 
 // define pin usage
 #define NEO_TX	6		// NEO transmit
@@ -101,20 +101,24 @@ float distance = 0.0, heading = 0.0;
 #include "SoftwareSerial.h"
 SoftwareSerial gps(GPS_RX, GPS_TX);
 #endif
+char dmLat[11], dmLon[11], bearing[7], dirNS = 0, dirEW = 0;
+#define GPSMESSAGETIME 250
 
 #if NEO_ON
-#include "NeoPixel.h"
+#include <Adafruit_NeoPixel.h>
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(40, NEO_TX, NEO_GRB + NEO_KHZ800);
 #endif
 
 #if ONE_ON
 #define CUSTOM_SETTINGS
 #define INCLUDE_TERMINAL_SHIELD
-#include "OneSheeld.h"
+#include <OneSheeld.h>
 #endif
 
 #if SDC_ON
 #include <SD.h>
+bool cardEnabled = true;
+SDLib::File MyFile;
 #endif
 
 /*
@@ -248,6 +252,49 @@ float calcBearing(float flat1, float flon1, float flat2, float flon2, float orig
 **** GEO FUNCTIONS - END**************************
 *************************************************/
 
+bool parseGPS() {
+	String finder(cstr);
+	uint16_t index = -1, found;
+	uint8_t i = 0;
+	// Skip GPRMC and UTC Time...
+	for (i = 0; i < 2; i++) {
+		index = finder.indexOf(",", index + 1);
+	}
+	if (cstr[index + 1] != 'A') {
+		return false;
+	}
+	index += 3;
+	found = finder.indexOf(",", index + 1);
+	if (found == -1) {
+		return false;
+	}
+
+	memcpy(dmLat, cstr + index, found - index);
+	index = found + 1;
+	dirNS = cstr[index++];
+	found = finder.indexOf(",", ++index);
+	if (found == -1) {
+		return false;
+	}
+	memcpy(dmLon, cstr + index, found - index);
+	index = found + 1;
+	found = -1;
+	dirEW = cstr[index];
+  index += 2;
+  found = finder.indexOf(",", index);
+  if (found == -1) {
+    return false;
+  }
+  index = found + 1;
+  found = finder.indexOf(",", index);
+  if (found == -1) {
+    return false;
+  }
+  memcpy(bearing, cstr + index, found - index);
+	return true;
+}
+
+
 #if NEO_ON
 /*
 Sets target number, heading and distance on NeoPixel Display
@@ -298,6 +345,12 @@ void getGPSMessage(void) {
 				// if checksum not found
 				if (cstr[x - 5] != '*') {
 					x = 0;
+#if ONE_ONE
+          if (millis() > TermTimer) {
+            Terminal.println("Invalid message ignored (Checksum not found)");
+            TermTimer += GPSMESSAGETIME;
+          }
+#endif
 					continue;
 				}
 
@@ -310,13 +363,31 @@ void getGPSMessage(void) {
 				// if invalid checksum
 				if (isum != 0) {
 					x = 0;
+#if ONE_ONE
+          if (millis() > TermTimer) {
+            Terminal.println("Invalid message ignored (Checksum is invalid)");
+            TermTimer += GPSMESSAGETIME;
+          }
+#endif
 					continue;
 				}
 
 				// else valid message
+				
+				// Status code check
+				if (cstr[18] != 'A') {
+					x = 0;
+#if ONE_ONE
+          if (millis() > TermTimer) {
+            Terminal.println("Invalid message ignored (Status code invalid)");
+            TermTimer += GPSMESSAGETIME;
+          }
+#endif
+					continue;
+				}
 				break;
 			}
-		}
+    }
 	}
 }
 
@@ -353,6 +424,7 @@ void getGPSMessage(void) {
 
 	memcpy(cstr, "$GPRMC,064951.000,A,2307.1256,N,12016.4438,E,0.03,165.48,260406,3.05,W,A*2C", sizeof(cstr));
 
+
 	return;
 }
 
@@ -361,12 +433,13 @@ void getGPSMessage(void) {
 void setup(void) {
 
 #if TRM_ON
-	// init serial interface
-	Serial.begin(115200);
+	// init Terminal interface
+  Serial.begin(115200);
 #endif	
 
 #if ONE_ON
 	// init OneShield Shield
+  OneSheeld.begin();
 #endif
 
 #if NEO_ON
@@ -380,6 +453,28 @@ void setup(void) {
 	sequential number of the file.  The filename can not be more than 8
 	chars in length (excluding the ".txt").
 	*/
+  Serial.println("[INFO] Initializing SD Card. . .");
+  if (!SD.begin(10)) {
+    Serial.println("SD card is hyper bjorked.");
+    cardEnabled = false;
+  } else {
+    for (uint8_t i = 0; i < 100; i++) {
+      char file[12] = "\0";
+      sprintf(file, "MyFile%i.txt", i);
+      if (SD.exists(file)) {
+        if (i == 99) {
+          cardEnabled = false;
+        }
+        continue;
+      } else {
+        MyFile = SD.open(file, FILE_WRITE);
+        if (!MyFile) {
+          Serial.println("Holy shitsnacks Batman, this thing fucked up again!");
+        }
+        break;
+      }
+    }
+  }
 #endif
 
 #if GPS_ON
@@ -389,7 +484,9 @@ void setup(void) {
 	gps.println(PMTK_API_SET_FIX_CTL_1HZ);
 	gps.println(PMTK_SET_NMEA_OUTPUT_RMC);
 #endif		
-
+	memset(dmLat,  0, 11);
+	memset(dmLon,  0, 11);
+  memset(bearing, 0, 7);
 	// init target button here
 
 }
@@ -403,13 +500,18 @@ void loop(void) {
 	// if GPRMC message (3rd letter = R)
 	while (cstr[3] == 'R') {
 		// parse message parameters
-
+    if (!parseGPS()) {
+      return;
+    }
 		// calculated destination heading
 
 		// calculated destination distance
 
 #if SDC_ON
 		// write current position to SecureDigital then flush
+    if (cardEnabled) {
+      
+    }
 #endif
 
 		break;
@@ -422,7 +524,17 @@ void loop(void) {
 
 #if TRM_ON
 	// print debug information to Serial Terminal
-	Serial.println(cstr);
+#if ONE_ON
+	Terminal.println(cstr);
+  Terminal.print("dmLat: ");
+  Terminal.println(dmLat);
+	Terminal.print("dmLon: ");
+  Terminal.println(dmLon);
+	Terminal.print("dirNS: ");
+  Terminal.println(dirNS);
+	Terminal.print("dirEW: ");
+  Terminal.println(dirEW);
+#endif
 #endif		
 
 #if ONE_ON

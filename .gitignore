@@ -27,3 +27,8 @@
 *.exe
 *.out
 *.app
+
+GeoCache/Debug/*
+GeoCache/Release/*
+GeoCache/__vm/*
+GeoCache/__vm/Configuration.Debug.vmps.xml
