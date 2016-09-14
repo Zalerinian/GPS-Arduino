@@ -232,7 +232,7 @@ float calcBearing(float flat1, float flon1, float flat2, float flon2) {
 	bearing = (atan2(y, x) * 180) / M_PI;
 
 	//change to 0-360:
-	bearing = (bearing + 360) % 360;
+	//bearing = (bearing + 360) % 360;
 
 	return(bearing);
 }
