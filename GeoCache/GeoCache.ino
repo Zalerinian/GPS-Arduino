@@ -214,7 +214,7 @@ float calcDistance(float flat1, float flon1, float flat2, float flon2) {
 /**************************************************
 Calculate Great Circle Bearing between two coordinates
 
-float calcBearing(float flat1, float flon1, float flat2, float flon2)
+float calcBearing(float flat1, float flon1, float flat2, float flon2, float originalbearing)
 
 Input:
 flat1, flon1 = first latitude and longitude coordinate in decimal degrees
@@ -223,7 +223,7 @@ flat2, flon2 = second latitude and longitude coordinate in decimal degrees
 Return:
 angle in degrees from magnetic north
 **************************************************/
-float calcBearing(float flat1, float flon1, float flat2, float flon2) {
+float calcBearing(float flat1, float flon1, float flat2, float flon2, float originalbearing) {
 	float bearing = 0.0;
 
 	// add code here
@@ -232,7 +232,14 @@ float calcBearing(float flat1, float flon1, float flat2, float flon2) {
 	bearing = (atan2(y, x) * 180) / M_PI;
 
 	//change to 0-360:
-	//bearing = (bearing + 360) % 360;
+	if (bearing < 0.0) {
+		bearing += 360.0f;
+	}
+
+	if (bearing > originalbearing)
+		bearing = bearing - originalbearing;
+	else
+		bearing = 360.0f - (originalbearing - bearing);
 
 	return(bearing);
 }
