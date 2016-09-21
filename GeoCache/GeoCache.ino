@@ -101,6 +101,8 @@ Hunt.
 #define GPS_RX_BUFSIZ	128
 char cstr[GPS_RX_BUFSIZ];
 
+
+
 // variables
 uint8_t target = 0;
 float distance = 0.0, heading = 0.0;
@@ -326,6 +328,7 @@ bool parseGPS() {
   }
 
   memcpy(bearing, cstr + index, found - index);
+  Serial.println("parsed successfully");
 	return true;
 }
 
@@ -435,8 +438,11 @@ struct  FLAGS
 	float lat;
 	float lon;
 };
-
+//FLAGS KTarget;
+//KTarget.lat = GEOLAT0;
+//KTarget.lon = GEOLON0;
 FLAGS flagsdata[4]; //you can add flags here
+//flagsdata[0] = KTarget;
 int FlagIndex = 0;
 int Flagss[4] = { 4,5,6,7 };
 /*
@@ -614,6 +620,7 @@ void getGPSMessage(void) {
 
 void setup(void) {
 
+	strip.setBrightness(25);
 #if TRM_ON
 	// init Terminal interface
   Serial.begin(115200);
@@ -626,6 +633,15 @@ void setup(void) {
 
 #if NEO_ON
 	// init NeoPixel Shield
+  Serial.println("setting pin mode for 6 to output");
+  pinMode(6, OUTPUT);
+
+  Serial.println("making FLAGS object");
+
+  FLAGS KTarget;
+  KTarget.lat = GEOLAT0;
+  KTarget.lon = GEOLON0;
+  flagsdata[0] = KTarget;
 #endif	
 
 #if SDC_ON
@@ -635,13 +651,13 @@ void setup(void) {
 	sequential number of the file.  The filename can not be more than 8
 	chars in length (excluding the ".txt").
 	*/
-  Serial.println("[INFO] Initializing SD Card. . .");
-  if (!SD.begin(10)) {
-    Serial.println("SD card is hyper bjorked.");
-    cardEnabled = false;
+  if (!SD.begin()) {
+    //cardEnabled = false;
   } else {
+
     for (uint8_t i = 0; i < 100; i++) {
       char file[12] = "\0";
+
       sprintf(file, "MyFile%i.txt", i);
       if (SD.exists(file)) {
         if (i == 99) {
@@ -651,7 +667,7 @@ void setup(void) {
       } else {
         MyFile = SD.open(file, FILE_WRITE);
         if (!MyFile) {
-          Serial.println("Holy shitsnacks Batman, this thing fucked up again!");
+		  cardEnabled = false;
         }
         break;
       }
@@ -661,10 +677,12 @@ void setup(void) {
 
 #if GPS_ON
 	// enable GPS sending GPRMC message
+
 	gps.begin(9600);
 	gps.println(PMTK_SET_NMEA_UPDATE_1HZ);
 	gps.println(PMTK_API_SET_FIX_CTL_1HZ);
 	gps.println(PMTK_SET_NMEA_OUTPUT_RMC);
+
 #endif		
 	memset(dmLat,  0, 11);
 	memset(dmLon,  0, 11);
@@ -676,7 +694,7 @@ void setup(void) {
 //debounce funtion for button
 bool debounce(int pin)
 {
-	for (int i = 0; i < 10000; i++)
+	for (int i = 0; i < 5000; i++)
 	{
 		if (digitalRead(pin) == HIGH)
 			return false;
@@ -686,11 +704,13 @@ bool debounce(int pin)
 bool PreviousButtonState = false;
 void loop(void) {
 	// if button pressed, set new target
+
 	if(debounce(Button))
 	{
 		if (PreviousButtonState == false)
 		{
 			IncrementFlagIndex();
+
 		}
 		PreviousButtonState = true;
 	}
@@ -698,18 +718,16 @@ void loop(void) {
 	{
 		PreviousButtonState = false;
 	}
-
 	// returns with message once a second
 	getGPSMessage();
-#pragma region Drew
 	// if GPRMC message (3rd letter = R)
+
 	while (cstr[3] == 'R') {
 		// parse message parameters
 		if (!parseGPS()) {
-			return;
+			break;
 		}
-#pragma endregion
-#pragma region Zixun
+
 		currentheading = GPS2floatbearing(bearing);
 		currentlat = degMin2DecDeg(&dirNS, dmLat);
 		currentlon = degMin2DecDeg(&dirEW, dmLon);
@@ -717,9 +735,10 @@ void loop(void) {
 		heading = calcBearing(currentlat, currentlon, flagsdata[FlagIndex].lat, flagsdata[FlagIndex].lon, currentheading);
 		// calculated destination distance
 		distance = calcDistance(currentlat, currentlon, flagsdata[FlagIndex].lat, flagsdata[FlagIndex].lon);
-#pragma endregion
-#pragma region Drew
+		SetDistanceToFlag((int16_t)distance);
+
 #if SDC_ON
+
 		// write current position to SecureDigital then flush
 		if (cardEnabled) {
       MyFile.print(currentlon);
@@ -733,13 +752,12 @@ void loop(void) {
 
 		break;
 	}
-#pragma endregion
-#pragma region Logano
+
 #if NEO_ON
+
 	// set NeoPixel target display
 	setNeoPixel(heading, distance);
 #endif		
-#pragma endregion
 	
 
 #if TRM_ON
