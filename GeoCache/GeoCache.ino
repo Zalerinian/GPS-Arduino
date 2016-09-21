@@ -461,7 +461,6 @@ void SetDisNeo()
 		strip.setPixelColor(22, 255, 255, 255);
 }
 #pragma endregion
-}
 
 #endif	// NEO_ON
 
