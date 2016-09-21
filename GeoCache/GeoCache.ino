@@ -660,10 +660,21 @@ bool debounce(int pin)
 	}
 	return true;
 }
-
+bool PreviousButtonState = false;
 void loop(void) {
 	// if button pressed, set new target
-
+	if(debounce(3));
+	{
+		if (PreviousButtonState == false)
+		{
+			IncrementFlagIndex();
+		}
+		PreviousButtonState = true;
+	}
+	else
+	{
+		PreviousButtonState = false;
+	}
 	// returns with message once a second
 	getGPSMessage();
 
