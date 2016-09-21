@@ -79,10 +79,10 @@ have NEO_ON, GPS_ON and SDC_ON during the actual GeoCache Treasure
 Hunt.
 */
 #define NEO_ON 1		// NeoPixelShield
-#define TRM_ON 1		// SerialTerminal
+#define TRM_ON 0		// SerialTerminal
 #define ONE_ON 0		// 1Sheeld
 #define SDC_ON 1		// SecureDigital
-#define GPS_ON 0		// GPSShield (off = simulated)
+#define GPS_ON 1		// GPSShield (off = simulated)
 
 // define pin usage
 #define NEO_TX	6		// NEO transmit

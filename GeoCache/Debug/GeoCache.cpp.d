@@ -12,6 +12,8 @@ C:\Users\Logano\AppData\Local\Temp\VMicroBuilds\GeoCache\uno\GeoCache.cpp.o: \
  e:\arudio\Arduino\hardware\arduino\avr\cores\arduino/Arduino.h \
  e:\arudio\Arduino\hardware\arduino\avr\variants\standard/pins_arduino.h \
  e:\arudio\Arduino\hardware\arduino\avr\cores\arduino/Arduino.h \
+ e:\arudio\Arduino\hardware\arduino\avr\libraries\SoftwareSerial\src/SoftwareSerial.h \
+ e:\arudio\Arduino\hardware\arduino\avr\cores\arduino/Stream.h \
  C:\Users\Logano\Documents\Arduino\libraries\Adafruit_NeoPixel-master/Adafruit_NeoPixel.h \
  e:\arudio\Arduino\libraries\SD\src/SD.h \
  e:\arudio\Arduino\libraries\SD\src/utility/SdFat.h \
