@@ -96,6 +96,7 @@ char cstr[GPS_RX_BUFSIZ];
 // variables
 uint8_t target = 0;
 float distance = 0.0, heading = 0.0;
+float currentlon, currentlat;
 
 #if GPS_ON
 #include "SoftwareSerial.h"
@@ -395,6 +396,13 @@ void ClearCompass()
 }
 #pragma endregion
 #pragma region TargetFlagsNeoPixel
+struct  FLAGS
+{
+	float lat;
+	float lon;
+};
+
+FLAGS flagsdata[4]; //you can add flags here
 int FlagIndex = 0;
 int Flagss[4] = { 4,5,6,7 };
 /*
@@ -683,9 +691,12 @@ void loop(void) {
 		}
 #pragma endregion
 #pragma region Zixun
+		currentlat = degMin2DecDeg(dmLat,dirNS);
+		currentlon = degMin2DecDeg(dmLon,dirEW);
 		// calculated destination heading
-
+		heading = calcBearing(currentlat, currentlon, flagsdata[FlagIndex].lat, flagsdata[FlagIndex].lon, heading);
 		// calculated destination distance
+		distance = calcDistance(currentlat, currentlon, flagsdata[FlagIndex].lat, flagsdata[FlagIndex].lon);
 #pragma endregion
 #pragma region Drew
 #if SDC_ON
