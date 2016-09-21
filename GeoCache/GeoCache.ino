@@ -297,7 +297,8 @@ bool parseGPS() {
 
 #if NEO_ON
 /*
-Sets target number, heading and distance on NeoPixel Display
+Heading is where the target is in relation to the user
+Distance is how far the target is from the user
 */
 void setNeoPixel(float heading, float distance) {
 
