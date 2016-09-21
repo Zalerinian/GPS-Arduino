@@ -78,10 +78,10 @@ all these libraries at the same time.  You are only permitted to
 have NEO_ON, GPS_ON and SDC_ON during the actual GeoCache Treasure
 Hunt.
 */
-#define NEO_ON 0		// NeoPixelShield
-#define TRM_ON 1		// SerialTerminal
-#define ONE_ON 1		// 1Sheeld
-#define SDC_ON 0		// SecureDigital
+#define NEO_ON 1		// NeoPixelShield
+#define TRM_ON 0		// SerialTerminal
+#define ONE_ON 0		// 1Sheeld
+#define SDC_ON 1		// SecureDigital
 #define GPS_ON 1		// GPSShield (off = simulated)
 
 // define pin usage
@@ -104,7 +104,8 @@ char cstr[GPS_RX_BUFSIZ];
 // variables
 uint8_t target = 0;
 float distance = 0.0, heading = 0.0;
-uint32_t Heartbeat = 0;
+float currentlon, currentlat, currentheading;
+uint8_t Button = 3;
 
 #if GPS_ON
 #include "SoftwareSerial.h"
@@ -186,7 +187,7 @@ float degMin2DecDeg(char *cind, char *ccor) {
 
 	// add code here
 	int d = (int)atof(ccor) / 100;
-	float mm = (float)atof(ccor) - d * 100;
+	float mm = atof(ccor) - d * 100;
 	float dd;
 
 	dd = mm / 60;
@@ -223,6 +224,26 @@ float calcDistance(float flat1, float flon1, float flat2, float flon2) {
 	distance = distance * 3959.00 * 5280;
 
 	return(distance);
+}
+
+/**************************************************
+Convert GPS bearing into float bearing
+
+float GPS2floatbearing(char *b)
+
+Input:
+b = string char pointer containing the GPS bearing
+
+Return:
+Decimal degrees coordinate.
+**************************************************/
+float GPS2floatbearing(char *b) {
+	float bearing = 0.0;
+
+	// add code here
+	bearing = atof(b);
+
+	return(bearing);
 }
 
 /**************************************************
@@ -313,16 +334,13 @@ bool parseGPS() {
 /*
 Sets target number, heading and distance on NeoPixel Display
 */
-void setNeoPixel(uint8_t target, float heading, float distance) {
+void setNeoPixel(float heading, float distance) {
 
-	float TargetBaring;
-	SetDirection(TargetBaring);
+	SetDirection(heading);
 	ClearCompass();
 
 	SetFlagNeo();
-
-	int16_t DistanceToFlagInput = 0;
-	SetDistanceToFlag(DistanceToFlagInput);
+	SetDistanceToFlag(distance);
 	SetDisNeo();
 
 	strip.show();
@@ -412,6 +430,13 @@ void ClearCompass()
 }
 #pragma endregion
 #pragma region TargetFlagsNeoPixel
+struct  FLAGS
+{
+	float lat;
+	float lon;
+};
+
+FLAGS flagsdata[4]; //you can add flags here
 int FlagIndex = 0;
 int Flagss[4] = { 4,5,6,7 };
 /*
@@ -448,13 +473,13 @@ void SetDistanceToFlag(int16_t kek)
 	DistanceToFlag = kek;
 }
 /*Sets The Color of the Distance to a corrosponding Distance
- 1000+ feet		 :Red
- 500+  feet		 :Orange
- 250+  feet		 :Yellow
- 75+   feet		 :Blue
- 40+   feet		 :Green
- 10+   feet		 :Purple
- 9-0   feet      :White
+1000+ feet		 :Red
+500+  feet		 :Orange
+250+  feet		 :Yellow
+75+   feet		 :Blue
+40+   feet		 :Green
+10+   feet		 :Purple
+9-0   feet      :White
 */
 void SetDisNeo()
 {
@@ -645,44 +670,74 @@ void setup(void) {
 	memset(dmLon,  0, 11);
   memset(bearing, 0, 7);
 	// init target button here
-
+  pinMode(Button, INPUT_PULLUP);
 }
 
+//debounce funtion for button
+bool debounce(int pin)
+{
+	for (int i = 0; i < 10000; i++)
+	{
+		if (digitalRead(pin) == HIGH)
+			return false;
+	}
+	return true;
+}
+bool PreviousButtonState = false;
 void loop(void) {
 	// if button pressed, set new target
-
+	if(debounce(Button))
+	{
+		if (PreviousButtonState == false)
+		{
+			IncrementFlagIndex();
+		}
+		PreviousButtonState = true;
+	}
+	else
+	{
+		PreviousButtonState = false;
+	}
 
 	// returns with message once a second
 	getGPSMessage();
-
+#pragma region Drew
 	// if GPRMC message (3rd letter = R)
 	while (cstr[3] == 'R') {
 		// parse message parameters
-    if (!parseGPS()) {
-      TERM.println("ParseGPS failed.");
-      return;
-    }
+		if (!parseGPS()) {
+			return;
+		}
+#pragma endregion
+#pragma region Zixun
+		currentheading = GPS2floatbearing(bearing);
+		currentlat = degMin2DecDeg(dirNS, dmLat);
+		currentlon = degMin2DecDeg(dirEW, dmLon);
     latitude  = degMin2DecDeg(&dirNS, dmLat);
     longitude = degMin2DecDeg(&dirEW, dmLon);
 		// calculated destination heading
-
+		heading = calcBearing(currentlat, currentlon, flagsdata[FlagIndex].lat, flagsdata[FlagIndex].lon, currentheading);
 		// calculated destination distance
-    //calcDistance();
-
+		distance = calcDistance(currentlat, currentlon, flagsdata[FlagIndex].lat, flagsdata[FlagIndex].lon);
+#pragma endregion
+#pragma region Drew
 #if SDC_ON
 		// write current position to SecureDigital then flush
-    if (cardEnabled) {
-      
-    }
+		if (cardEnabled) {
+
+		}
 #endif
 
 		break;
 	}
-
+#pragma endregion
+#pragma region Logano
 #if NEO_ON
 	// set NeoPixel target display
-	setNeoPixel(target, heading, distance);
+	setNeoPixel(heading, distance);
 #endif		
+#pragma endregion
+	
 
 #if TRM_ON
 	// print debug information to Serial Terminal
