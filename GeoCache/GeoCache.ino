@@ -96,6 +96,8 @@ char cstr[GPS_RX_BUFSIZ];
 // variables
 uint8_t target = 0;
 float distance = 0.0, heading = 0.0;
+unsigned long timeout = 0; //timeout for button press
+uint8_t targetbutton = 3;
 
 #if GPS_ON
 #include "SoftwareSerial.h"
@@ -647,7 +649,7 @@ void setup(void) {
 	memset(dmLon,  0, 11);
   memset(bearing, 0, 7);
 	// init target button here
-
+   pinMode(targetbutton, INPUT_PULLUP);
 }
 
 //debounce funtion for button
@@ -663,7 +665,16 @@ bool debounce(int pin)
 
 void loop(void) {
 	// if button pressed, set new target
-
+	if (debounce(targetbutton))
+	{
+		if (millis() - timeout >= 100)
+		{
+			target++;
+			if (target > 3)
+				target = 0;
+			timeout = millis();
+		}
+	}
 	// returns with message once a second
 	getGPSMessage();
 
@@ -674,7 +685,7 @@ void loop(void) {
       return;
     }
 		// calculated destination heading
-
+		
 		// calculated destination distance
 
 #if SDC_ON
