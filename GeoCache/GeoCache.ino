@@ -175,8 +175,8 @@ float degMin2DecDeg(char *cind, char *ccor) {
 	float degrees = 0.0;
 
 	// add code here
-	int d = (int)atoi(ccor) / 100;
-	float mm = atoi(ccor) - d * 100;
+	int d = (int)atof(ccor) / 100;
+	float mm = atof(ccor) - d * 100;
 	float dd;
 
 	dd = mm / 60;
