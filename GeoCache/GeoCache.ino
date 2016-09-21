@@ -299,16 +299,13 @@ bool parseGPS() {
 /*
 Sets target number, heading and distance on NeoPixel Display
 */
-void setNeoPixel(uint8_t target, float heading, float distance) {
+void setNeoPixel(float heading, float distance) {
 
-	float TargetBaring;
-	SetDirection(TargetBaring);
+	SetDirection(heading);
 	ClearCompass();
 
 	SetFlagNeo();
-
-	int16_t DistanceToFlagInput = 0;
-	SetDistanceToFlag(DistanceToFlagInput);
+	SetDistanceToFlag(distance);
 	SetDisNeo();
 
 	strip.show();
@@ -663,7 +660,7 @@ bool debounce(int pin)
 bool PreviousButtonState = false;
 void loop(void) {
 	// if button pressed, set new target
-	if(debounce(3));
+	if(debounce(3))
 	{
 		if (PreviousButtonState == false)
 		{
@@ -677,31 +674,37 @@ void loop(void) {
 	}
 	// returns with message once a second
 	getGPSMessage();
-
+#pragma region Drew
 	// if GPRMC message (3rd letter = R)
 	while (cstr[3] == 'R') {
 		// parse message parameters
-    if (!parseGPS()) {
-      return;
-    }
+		if (!parseGPS()) {
+			return;
+		}
+#pragma endregion
+#pragma region Zixun
 		// calculated destination heading
 
 		// calculated destination distance
-
+#pragma endregion
+#pragma region Drew
 #if SDC_ON
 		// write current position to SecureDigital then flush
-    if (cardEnabled) {
-      
-    }
+		if (cardEnabled) {
+
+		}
 #endif
 
 		break;
 	}
-
+#pragma endregion
+#pragma region Logano
 #if NEO_ON
 	// set NeoPixel target display
-	setNeoPixel(target, heading, distance);
+	setNeoPixel(heading, distance);
 #endif		
+#pragma endregion
+	
 
 #if TRM_ON
 	// print debug information to Serial Terminal
