@@ -80,14 +80,22 @@ Hunt.
 */
 #define NEO_ON 0		// NeoPixelShield
 #define TRM_ON 1		// SerialTerminal
-#define ONE_ON 0		// 1Sheeld
-#define SDC_ON 1		// SecureDigital
-#define GPS_ON 0		// GPSShield (off = simulated)
+#define ONE_ON 1		// 1Sheeld
+#define SDC_ON 0		// SecureDigital
+#define GPS_ON 1		// GPSShield (off = simulated)
 
 // define pin usage
 #define NEO_TX	6		// NEO transmit
 #define GPS_TX	7		// GPS transmit
 #define GPS_RX	8		// GPS receive
+
+#if ONE_ON
+#define TERM Terminal
+#elif TRM_ON
+#define TERM Serial
+#else
+#define TERM //
+#endif
 
 // GPS message buffer
 #define GPS_RX_BUFSIZ	128
@@ -96,12 +104,14 @@ char cstr[GPS_RX_BUFSIZ];
 // variables
 uint8_t target = 0;
 float distance = 0.0, heading = 0.0;
+uint32_t Heartbeat = 0;
 
 #if GPS_ON
 #include "SoftwareSerial.h"
 SoftwareSerial gps(GPS_RX, GPS_TX);
 #endif
 char dmLat[11], dmLon[11], bearing[7], dirNS = 0, dirEW = 0;
+float latitude, longitude;
 #define GPSMESSAGETIME 250
 
 #if NEO_ON
@@ -175,8 +185,8 @@ float degMin2DecDeg(char *cind, char *ccor) {
 	float degrees = 0.0;
 
 	// add code here
-	int d = (int)atoi(ccor) / 100;
-	float mm = atoi(ccor) - d * 100;
+	int d = (int)atof(ccor) / 100;
+	float mm = (float)atof(ccor) - d * 100;
 	float dd;
 
 	dd = mm / 60;
@@ -256,13 +266,14 @@ bool parseGPS() {
 	String finder(cstr);
 	uint16_t index = -1, found;
 	uint8_t i = 0;
-	// Skip GPRMC and UTC Time...
+ 	// Skip GPRMC and UTC Time...
 	for (i = 0; i < 2; i++) {
 		index = finder.indexOf(",", index + 1);
 	}
 	if (cstr[index + 1] != 'A') {
 		return false;
 	}
+
 	index += 3;
 	found = finder.indexOf(",", index + 1);
 	if (found == -1) {
@@ -276,6 +287,7 @@ bool parseGPS() {
 	if (found == -1) {
 		return false;
 	}
+
 	memcpy(dmLon, cstr + index, found - index);
 	index = found + 1;
 	found = -1;
@@ -285,11 +297,13 @@ bool parseGPS() {
   if (found == -1) {
     return false;
   }
+
   index = found + 1;
   found = finder.indexOf(",", index);
   if (found == -1) {
     return false;
   }
+
   memcpy(bearing, cstr + index, found - index);
 	return true;
 }
@@ -300,8 +314,167 @@ bool parseGPS() {
 Sets target number, heading and distance on NeoPixel Display
 */
 void setNeoPixel(uint8_t target, float heading, float distance) {
-	// add code here
+
+	float TargetBaring;
+	SetDirection(TargetBaring);
+	ClearCompass();
+
+	SetFlagNeo();
+
+	int16_t DistanceToFlagInput = 0;
+	SetDistanceToFlag(DistanceToFlagInput);
+	SetDisNeo();
+
+	strip.show();
 }
+#pragma region Compass Neo Pixel
+int index = 0;
+/*Takes in a value between -180 & +180.
+will then tell the compass to display a direction.
+The directions float must be calculated before passing it into this function.
+directions acts as if 0 degress is the face.*/
+void SetDirection(float directions)
+{
+	// oxo
+	// o o
+	// ooo
+	if (directions >= -22.5 && directions <= 22.5)
+	{
+		strip.setPixelColor(1, 0, 255, 0);
+		index = 0;
+	}
+	// oox
+	// o o
+	// ooo
+	else if (directions >= 22.5 && directions <= 77.5)
+	{
+		strip.setPixelColor(2, 0, 255, 0);
+		index = 1;
+	}
+	// ooo
+	// o x
+	// ooo
+	else if (directions >= 77.5 && directions <= 122.5)
+	{
+		strip.setPixelColor(10, 0, 255, 0);
+		index = 2;
+	}
+	// ooo
+	// o o
+	// oox
+	else if (directions >= 122.5 && directions <= 167.5)
+	{
+		strip.setPixelColor(18, 0, 255, 0);
+		index = 3;
+	}
+	// ooo
+	// o o 
+	// xoo
+	else if (directions <= -122.5 && directions >= -167.5)
+	{
+		strip.setPixelColor(16, 0, 255, 0);
+		index = 5;
+	}
+	// ooo
+	// x o
+	// ooo
+	else if (directions <= -77.5  && directions >= -122.5)
+	{
+		strip.setPixelColor(8, 0, 255, 0);
+		index = 6;
+	}
+	// xoo
+	// o o
+	// ooo
+	else if (directions <= -22.5  && directions >= -77.5)
+	{
+		strip.setPixelColor(0, 0, 255, 0);
+		index = 7;
+	}
+	// ooo
+	// o o
+	// oxo
+	else if (directions >= 167.5 || directions <= -167.5)
+	{
+		strip.setPixelColor(17, 0, 255, 0);
+		index = 4;
+	}
+}
+int IndexArray[8] = { 1,2,10,18,17,16,8,0 };
+/*Clears the compass for everything except the index value for the IndexArray*/
+void ClearCompass()
+{
+	for (int i = 0; i < 8; i++)
+	{
+		if (i != index)
+			strip.setPixelColor(IndexArray[i], 0, 0, 0);
+	}
+}
+#pragma endregion
+#pragma region TargetFlagsNeoPixel
+int FlagIndex = 0;
+int Flagss[4] = { 4,5,6,7 };
+/*
+Increments the FlagIndex
+Handles rolling over.
+*/
+void IncrementFlagIndex()
+{
+	FlagIndex = (FlagIndex + 1) % 4;
+}
+/*
+Based on the FlagIndex the function the neopixel index is set to be bright green
+while the rest of the pixels are set to black AKA off.
+*/
+void SetFlagNeo()
+{
+	for (int i = 0; i < 4; i++)
+	{
+		if (i == FlagIndex)
+			strip.setPixelColor(Flagss[i], 0, 255, 0);
+		else
+		{
+			strip.setPixelColor(Flagss[i], 0, 0, 0);
+		}
+	}
+}
+#pragma endregion
+#pragma region DistanceNeoLight
+
+int16_t DistanceToFlag = 0;
+/*Sets the DistanceToFlag equal to kek*/
+void SetDistanceToFlag(int16_t kek)
+{
+	DistanceToFlag = kek;
+}
+/*Sets The Color of the Distance to a corrosponding Distance
+ 1000+ feet		 :Red
+ 500+  feet		 :Orange
+ 250+  feet		 :Yellow
+ 75+   feet		 :Blue
+ 40+   feet		 :Green
+ 10+   feet		 :Purple
+ 9-0   feet      :White
+*/
+void SetDisNeo()
+{
+	//pixel 22 on the strip is the distance 
+	if (DistanceToFlag >= 1000)
+		strip.setPixelColor(22, 255, 0, 0);
+	else if (DistanceToFlag >= 500)
+		strip.setPixelColor(22, 255, 69, 0);
+	else if (DistanceToFlag >= 250)
+		strip.setPixelColor(22, 255, 215, 0);
+	else if (DistanceToFlag >= 75)
+		strip.setPixelColor(22, 0, 0, 255);
+	else if (DistanceToFlag >= 40)
+		strip.setPixelColor(22, 0, 255, 0);
+	else if (DistanceToFlag >= 10)
+		strip.setPixelColor(22, 241, 0, 241);
+	else
+		strip.setPixelColor(22, 255, 255, 255);
+}
+#pragma endregion
 
 #endif	// NEO_ON
 
@@ -345,12 +518,6 @@ void getGPSMessage(void) {
 				// if checksum not found
 				if (cstr[x - 5] != '*') {
 					x = 0;
-#if ONE_ONE
-          if (millis() > TermTimer) {
-            Terminal.println("Invalid message ignored (Checksum not found)");
-            TermTimer += GPSMESSAGETIME;
-          }
-#endif
 					continue;
 				}
 
@@ -363,12 +530,6 @@ void getGPSMessage(void) {
 				// if invalid checksum
 				if (isum != 0) {
 					x = 0;
-#if ONE_ONE
-          if (millis() > TermTimer) {
-            Terminal.println("Invalid message ignored (Checksum is invalid)");
-            TermTimer += GPSMESSAGETIME;
-          }
-#endif
 					continue;
 				}
 
@@ -377,12 +538,6 @@ void getGPSMessage(void) {
 				// Status code check
 				if (cstr[18] != 'A') {
 					x = 0;
-#if ONE_ONE
-          if (millis() > TermTimer) {
-            Terminal.println("Invalid message ignored (Status code invalid)");
-            TermTimer += GPSMESSAGETIME;
-          }
-#endif
 					continue;
 				}
 				break;
@@ -424,6 +579,8 @@ void getGPSMessage(void) {
 
 	memcpy(cstr, "$GPRMC,064951.000,A,2307.1256,N,12016.4438,E,0.03,165.48,260406,3.05,W,A*2C", sizeof(cstr));
 
+  TERM.println("CSTR: ");
+  TERM.println(cstr);
 
 	return;
 }
@@ -494,6 +651,7 @@ void setup(void) {
 void loop(void) {
 	// if button pressed, set new target
 
+
 	// returns with message once a second
 	getGPSMessage();
 
@@ -501,11 +659,15 @@ void loop(void) {
 	while (cstr[3] == 'R') {
 		// parse message parameters
     if (!parseGPS()) {
+      TERM.println("ParseGPS failed.");
       return;
     }
+    latitude  = degMin2DecDeg(&dirNS, dmLat);
+    longitude = degMin2DecDeg(&dirEW, dmLon);
 		// calculated destination heading
 
 		// calculated destination distance
+    //calcDistance();
 
 #if SDC_ON
 		// write current position to SecureDigital then flush
@@ -524,17 +686,20 @@ void loop(void) {
 
 #if TRM_ON
 	// print debug information to Serial Terminal
-#if ONE_ON
-	Terminal.println(cstr);
-  Terminal.print("dmLat: ");
-  Terminal.println(dmLat);
-	Terminal.print("dmLon: ");
-  Terminal.println(dmLon);
-	Terminal.print("dirNS: ");
-  Terminal.println(dirNS);
-	Terminal.print("dirEW: ");
-  Terminal.println(dirEW);
-#endif
+//#if ONE_ON
+  TERM.print("dmLat: ");
+  TERM.println(dmLat);
+	TERM.print("dmLon: ");
+  TERM.println(dmLon);
+  TERM.print("Float Lat: ");
+  TERM.println(latitude);
+  TERM.print("Float Lon: ");
+  TERM.println(longitude);
+	TERM.print("dirNS: ");
+  TERM.println(dirNS);
+	TERM.print("dirEW: ");
+  TERM.println(dirEW);
+//#endif
 #endif		
 
 #if ONE_ON
