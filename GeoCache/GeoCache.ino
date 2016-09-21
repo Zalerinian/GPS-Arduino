@@ -711,10 +711,8 @@ void loop(void) {
 #pragma endregion
 #pragma region Zixun
 		currentheading = GPS2floatbearing(bearing);
-		currentlat = degMin2DecDeg(dirNS, dmLat);
-		currentlon = degMin2DecDeg(dirEW, dmLon);
-    latitude  = degMin2DecDeg(&dirNS, dmLat);
-    longitude = degMin2DecDeg(&dirEW, dmLon);
+		currentlat = degMin2DecDeg(&dirNS, dmLat);
+		currentlon = degMin2DecDeg(&dirEW, dmLon);
 		// calculated destination heading
 		heading = calcBearing(currentlat, currentlon, flagsdata[FlagIndex].lat, flagsdata[FlagIndex].lon, currentheading);
 		// calculated destination distance
@@ -724,7 +722,12 @@ void loop(void) {
 #if SDC_ON
 		// write current position to SecureDigital then flush
 		if (cardEnabled) {
-
+      MyFile.print(currentlon);
+      MyFile.print(",");
+      MyFile.print(currentlat);
+      MyFile.print(",");
+      MyFile.println(distance);
+      MyFile.flush();
 		}
 #endif
 
