@@ -78,7 +78,7 @@ all these libraries at the same time.  You are only permitted to
 have NEO_ON, GPS_ON and SDC_ON during the actual GeoCache Treasure
 Hunt.
 */
-#define NEO_ON 0		// NeoPixelShield
+#define NEO_ON 1		// NeoPixelShield
 #define TRM_ON 1		// SerialTerminal
 #define ONE_ON 0		// 1Sheeld
 #define SDC_ON 1		// SecureDigital
@@ -175,8 +175,8 @@ float degMin2DecDeg(char *cind, char *ccor) {
 	float degrees = 0.0;
 
 	// add code here
-	int d = (int)atoi(ccor) / 100;
-	float mm = atoi(ccor) - d * 100;
+	int d = (int)atof(ccor) / 100;
+	float mm = atof(ccor) - d * 100;
 	float dd;
 
 	dd = mm / 60;
@@ -300,7 +300,167 @@ bool parseGPS() {
 Sets target number, heading and distance on NeoPixel Display
 */
 void setNeoPixel(uint8_t target, float heading, float distance) {
-	// add code here
+
+	float TargetBaring;
+	SetDirection(TargetBaring);
+	ClearCompass();
+
+	SetFlagNeo();
+
+	int16_t DistanceToFlagInput = 0;
+	SetDistanceToFlag(DistanceToFlagInput);
+	SetDisNeo();
+
+	strip.show();
+}
+#pragma region Compass Neo Pixel
+int index = 0;
+/*Takes in a value between -180 & +180.
+will then tell the compass to display a direction.
+The directions float must be calculated before passing it into this function.
+directions acts as if 0 degress is the face.*/
+void SetDirection(float directions)
+{
+	// oxo
+	// o o
+	// ooo
+	if (directions >= -22.5 && directions <= 22.5)
+	{
+		strip.setPixelColor(1, 0, 255, 0);
+		index = 0;
+	}
+	// oox
+	// o o
+	// ooo
+	else if (directions >= 22.5 && directions <= 77.5)
+	{
+		strip.setPixelColor(2, 0, 255, 0);
+		index = 1;
+	}
+	// ooo
+	// o x
+	// ooo
+	else if (directions >= 77.5 && directions <= 122.5)
+	{
+		strip.setPixelColor(10, 0, 255, 0);
+		index = 2;
+	}
+	// ooo
+	// o o
+	// oox
+	else if (directions >= 122.5 && directions <= 167.5)
+	{
+		strip.setPixelColor(18, 0, 255, 0);
+		index = 3;
+	}
+	// ooo
+	// o o 
+	// xoo
+	else if (directions <= -122.5 && directions >= -167.5)
+	{
+		strip.setPixelColor(16, 0, 255, 0);
+		index = 5;
+	}
+	// ooo
+	// x o
+	// ooo
+	else if (directions <= -77.5  && directions >= -122.5)
+	{
+		strip.setPixelColor(8, 0, 255, 0);
+		index = 6;
+	}
+	// xoo
+	// o o
+	// ooo
+	else if (directions <= -22.5  && directions >= -77.5)
+	{
+		strip.setPixelColor(0, 0, 255, 0);
+		index = 7;
+	}
+	// ooo
+	// o o
+	// oxo
+	else if (directions >= 167.5 || directions <= -167.5)
+	{
+		strip.setPixelColor(17, 0, 255, 0);
+		index = 4;
+	}
+}
+int IndexArray[8] = { 1,2,10,18,17,16,8,0 };
+/*Clears the compass for everything except the index value for the IndexArray*/
+void ClearCompass()
+{
+	for (int i = 0; i < 8; i++)
+	{
+		if (i != index)
+			strip.setPixelColor(IndexArray[i], 0, 0, 0);
+	}
+}
+#pragma endregion
+#pragma region TargetFlagsNeoPixel
+int FlagIndex = 0;
+int Flagss[4] = { 4,5,6,7 };
+/*
+Increments the FlagIndex
+Handles rolling over.
+*/
+void IncrementFlagIndex()
+{
+	FlagIndex = (FlagIndex + 1) % 4;
+}
+/*
+Based on the FlagIndex the function the neopixel index is set to be bright green
+while the rest of the pixels are set to black AKA off.
+*/
+void SetFlagNeo()
+{
+	for (int i = 0; i < 4; i++)
+	{
+		if (i == FlagIndex)
+			strip.setPixelColor(Flagss[i], 0, 255, 0);
+		else
+		{
+			strip.setPixelColor(Flagss[i], 0, 0, 0);
+		}
+	}
+}
+#pragma endregion
+#pragma region DistanceNeoLight
+
+int16_t DistanceToFlag = 0;
+/*Sets the DistanceToFlag equal to kek*/
+void SetDistanceToFlag(int16_t kek)
+{
+	DistanceToFlag = kek;
+}
+/*Sets The Color of the Distance to a corrosponding Distance
+1000+ feet		 :Red
+500+  feet		 :Orange
+250+  feet		 :Yellow
+75+   feet		 :Blue
+40+   feet		 :Green
+10+   feet		 :Purple
+9-0   feet      :White
+*/
+void SetDisNeo()
+{
+	//pixel 22 on the strip is the distance 
+	if (DistanceToFlag >= 1000)
+		strip.setPixelColor(22, 255, 0, 0);
+	else if (DistanceToFlag >= 500)
+		strip.setPixelColor(22, 255, 69, 0);
+	else if (DistanceToFlag >= 250)
+		strip.setPixelColor(22, 255, 215, 0);
+	else if (DistanceToFlag >= 75)
+		strip.setPixelColor(22, 0, 0, 255);
+	else if (DistanceToFlag >= 40)
+		strip.setPixelColor(22, 0, 255, 0);
+	else if (DistanceToFlag >= 10)
+		strip.setPixelColor(22, 241, 0, 241);
+	else
+		strip.setPixelColor(22, 255, 255, 255);
+}
+#pragma endregion
 }
 
 #endif	// NEO_ON
