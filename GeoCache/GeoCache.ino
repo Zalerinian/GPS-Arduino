@@ -97,6 +97,7 @@ char cstr[GPS_RX_BUFSIZ];
 uint8_t target = 0;
 float distance = 0.0, heading = 0.0;
 float currentlon, currentlat, currentheading;
+uint8_t Button = 3;
 
 #if GPS_ON
 #include "SoftwareSerial.h"
@@ -672,7 +673,7 @@ void setup(void) {
 	memset(dmLon,  0, 11);
   memset(bearing, 0, 7);
 	// init target button here
-
+  pinMode(Button, INPUT_PULLUP);
 }
 
 //debounce funtion for button
@@ -688,7 +689,7 @@ bool debounce(int pin)
 bool PreviousButtonState = false;
 void loop(void) {
 	// if button pressed, set new target
-	if(debounce(3))
+	if(debounce(Button))
 	{
 		if (PreviousButtonState == false)
 		{
