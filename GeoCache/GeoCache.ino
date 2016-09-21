@@ -650,6 +650,17 @@ void setup(void) {
 
 }
 
+//debounce funtion for button
+bool debounce(int pin)
+{
+	for (int i = 0; i < 10000; i++)
+	{
+		if (digitalRead(pin) == HIGH)
+			return false;
+	}
+	return true;
+}
+
 void loop(void) {
 	// if button pressed, set new target
 
