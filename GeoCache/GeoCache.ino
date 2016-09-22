@@ -79,7 +79,7 @@ have NEO_ON, GPS_ON and SDC_ON during the actual GeoCache Treasure
 Hunt.
 */
 #define NEO_ON 1		// NeoPixelShield
-#define TRM_ON 0		// SerialTerminal
+#define TRM_ON 1		// SerialTerminal
 #define ONE_ON 0		// 1Sheeld
 #define SDC_ON 1		// SecureDigital
 #define GPS_ON 1		// GPSShield (off = simulated)
@@ -94,7 +94,7 @@ Hunt.
 #elif TRM_ON
 #define TERM Serial
 #else
-#define TERM //
+#define TERM ///
 #endif
 
 // GPS message buffer
@@ -623,7 +623,7 @@ void setup(void) {
 	strip.setBrightness(10);
 #if TRM_ON
 	// init Terminal interface
-  Serial.begin(115200);
+  Serial.begin(9600);
 #endif	
 
 #if ONE_ON
@@ -650,12 +650,12 @@ void setup(void) {
 	chars in length (excluding the ".txt").
 	*/
   if (!SD.begin()) {
-    //cardEnabled = false;
+    cardEnabled = false;
+    Serial.println("SD Disabled.");
   } else {
-
     for (uint8_t i = 0; i < 100; i++) {
       char file[12] = "\0";
-
+      Serial.print(i);
       sprintf(file, "MyFile%i.txt", i);
       if (SD.exists(file)) {
         if (i == 99) {
@@ -663,9 +663,12 @@ void setup(void) {
         }
         continue;
       } else {
+        TERM.print(file);
+        TERM.println(" successfully opened.");
         MyFile = SD.open(file, FILE_WRITE);
         if (!MyFile) {
-		  cardEnabled = false;
+          TERM.println("Plot twist! it failed!");
+		      cardEnabled = false;
         }
         break;
       }
@@ -760,20 +763,6 @@ void loop(void) {
 
 #if TRM_ON
 	// print debug information to Serial Terminal
-//#if ONE_ON
-  TERM.print("dmLat: ");
-  TERM.println(dmLat);
-	TERM.print("dmLon: ");
-  TERM.println(dmLon);
-  TERM.print("Float Lat: ");
-  TERM.println(latitude);
-  TERM.print("Float Lon: ");
-  TERM.println(longitude);
-	TERM.print("dirNS: ");
-  TERM.println(dirNS);
-	TERM.print("dirEW: ");
-  TERM.println(dirEW);
-//#endif
 #endif		
 
 #if ONE_ON
