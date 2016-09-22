@@ -620,7 +620,7 @@ void getGPSMessage(void) {
 
 void setup(void) {
 
-	strip.setBrightness(25);
+	strip.setBrightness(10);
 #if TRM_ON
 	// init Terminal interface
   Serial.begin(115200);
@@ -633,10 +633,8 @@ void setup(void) {
 
 #if NEO_ON
 	// init NeoPixel Shield
-  Serial.println("setting pin mode for 6 to output");
-  pinMode(6, OUTPUT);
 
-  Serial.println("making FLAGS object");
+  pinMode(6, OUTPUT);
 
   FLAGS KTarget;
   KTarget.lat = GEOLAT0;
