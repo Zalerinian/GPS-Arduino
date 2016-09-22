@@ -96,7 +96,7 @@ char cstr[GPS_RX_BUFSIZ];
 // variables
 uint8_t target = 0;
 float distance = 0.0, heading = 0.0;
-float currentlon, currentlat;
+float currentlon, currentlat, currentheading;
 
 #if GPS_ON
 #include "SoftwareSerial.h"
@@ -214,6 +214,26 @@ float calcDistance(float flat1, float flon1, float flat2, float flon2) {
 	distance = distance * 3959.00 * 5280;
 
 	return(distance);
+}
+
+/**************************************************
+Convert GPS bearing into float bearing
+
+float GPS2floatbearing(char *b)
+
+Input:
+b = string char pointer containing the GPS bearing
+
+Return:
+Decimal degrees coordinate.
+**************************************************/
+float GPS2floatbearing(char *b) {
+	float bearing = 0.0;
+
+	// add code here
+	bearing = atof(b);
+
+	return(bearing);
 }
 
 /**************************************************
@@ -691,10 +711,11 @@ void loop(void) {
 		}
 #pragma endregion
 #pragma region Zixun
-		currentlat = degMin2DecDeg(dmLat,dirNS);
-		currentlon = degMin2DecDeg(dmLon,dirEW);
+		currentheading = GPS2floatbearing(bearing);
+		currentlat = degMin2DecDeg(dirNS, dmLat);
+		currentlon = degMin2DecDeg(dirEW, dmLon);
 		// calculated destination heading
-		heading = calcBearing(currentlat, currentlon, flagsdata[FlagIndex].lat, flagsdata[FlagIndex].lon, heading);
+		heading = calcBearing(currentlat, currentlon, flagsdata[FlagIndex].lat, flagsdata[FlagIndex].lon, currentheading);
 		// calculated destination distance
 		distance = calcDistance(currentlat, currentlon, flagsdata[FlagIndex].lat, flagsdata[FlagIndex].lon);
 #pragma endregion
