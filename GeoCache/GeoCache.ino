@@ -220,10 +220,27 @@ float calcDistance(float flat1, float flon1, float flat2, float flon2) {
 	float distance = 0.0;
 
 	// add code here
-	float radLatitudeDiff = (flat1 * M_PI / 180) - (flat2 * M_PI / 180);
+
+
+
+	float rLAT = radians(flat1);
+	float rLAT2 = radians(flat2);
+
+	float latitude = radians(flat2 - flat1);
+	float lontude = radians(flon2 - flon1);
+
+
+	float VAR1 = pow(sin(latitude / 2.0f), 2) + cos(rLAT)*cos(rLAT2) * (pow(sin(lontude / 2.0f), 2));
+	float VAR2 = 2.0f * atan2(sqrt(VAR1), sqrt(1 - VAR1));
+
+	distance = 3959 * 5280 * VAR2;
+	
+	/*float radLatitudeDiff = (flat1 * M_PI / 180)) - (flat2 * M_PI / 180);
 	float radLongitudeDiff = (flon1 * M_PI / 180) - (flon2 * M_PI / 180);
+
+
 	distance = 2 * asin((sqrt(pow(sin(radLatitudeDiff / 2), 2) + cos(flat1 * M_PI / 180) * cos(flat2 * M_PI / 180) * pow(sin(radLongitudeDiff / 2), 2))));
-	distance = distance * 3959.00 * 5280;
+	distance = distance * 3959.00 * 5280;*/
 
 	return(distance);
 }
@@ -241,7 +258,7 @@ Decimal degrees coordinate.
 **************************************************/
 float GPS2floatbearing(char *b) {
 	float bearing = 0.0;
-
+	Serial.println(b);
 	// add code here
 	bearing = atof(b);
 
@@ -289,7 +306,7 @@ bool parseGPS() {
 	String finder(cstr);
 	uint16_t index = -1, found;
 	uint8_t i = 0;
- 	// Skip GPRMC and UTC Time...
+	// Skip GPRMC and UTC Time...
 	for (i = 0; i < 2; i++) {
 		index = finder.indexOf(",", index + 1);
 	}
@@ -315,20 +332,20 @@ bool parseGPS() {
 	index = found + 1;
 	found = -1;
 	dirEW = cstr[index];
-  index += 2;
-  found = finder.indexOf(",", index);
-  if (found == -1) {
-    return false;
-  }
+	index += 2;
+	found = finder.indexOf(",", index);
+	if (found == -1) {
+		return false;
+	}
 
-  index = found + 1;
-  found = finder.indexOf(",", index);
-  if (found == -1) {
-    return false;
-  }
+	index = found + 1;
+	found = finder.indexOf(",", index);
+	if (found == -1) {
+		return false;
+	}
 
-  memcpy(bearing, cstr + index, found - index);
-  Serial.println("parsed successfully");
+	memcpy(bearing, cstr + index, found - index);
+	Serial.println("parsed successfully");
 	return true;
 }
 
@@ -356,18 +373,10 @@ The directions float must be calculated before passing it into this function.
 directions acts as if 0 degress is the face.*/
 void SetDirection(float directions)
 {
-	// oxo
-	// o o
-	// ooo
-	if (directions >= -22.5 && directions <= 22.5)
-	{
-		strip.setPixelColor(1, 0, 255, 0);
-		index = 0;
-	}
 	// oox
 	// o o
 	// ooo
-	else if (directions >= 22.5 && directions <= 77.5)
+	if (directions >= 22.5 && directions <= 67.5)
 	{
 		strip.setPixelColor(2, 0, 255, 0);
 		index = 1;
@@ -375,7 +384,7 @@ void SetDirection(float directions)
 	// ooo
 	// o x
 	// ooo
-	else if (directions >= 77.5 && directions <= 122.5)
+	else if (directions >= 67.5 && directions <= 112.5)
 	{
 		strip.setPixelColor(10, 0, 255, 0);
 		index = 2;
@@ -383,15 +392,23 @@ void SetDirection(float directions)
 	// ooo
 	// o o
 	// oox
-	else if (directions >= 122.5 && directions <= 167.5)
+	else if (directions >= 112.5 && directions <= 157.5)
 	{
 		strip.setPixelColor(18, 0, 255, 0);
 		index = 3;
 	}
 	// ooo
 	// o o 
+	// oxo
+	else if (directions >= 157.5 && directions <= 202.5)
+	{
+		strip.setPixelColor(17, 0, 255, 0);
+		index = 4;
+	}
+	// ooo
+	// o o
 	// xoo
-	else if (directions <= -122.5 && directions >= -167.5)
+	else if (directions >= 202.5  && directions <= 247.5)
 	{
 		strip.setPixelColor(16, 0, 255, 0);
 		index = 5;
@@ -399,7 +416,7 @@ void SetDirection(float directions)
 	// ooo
 	// x o
 	// ooo
-	else if (directions <= -77.5  && directions >= -122.5)
+	else if (directions >= 247.5  && directions <= 292.5)
 	{
 		strip.setPixelColor(8, 0, 255, 0);
 		index = 6;
@@ -407,18 +424,18 @@ void SetDirection(float directions)
 	// xoo
 	// o o
 	// ooo
-	else if (directions <= -22.5  && directions >= -77.5)
+	else if (directions >= 292.5 && directions <= 337.5)
 	{
 		strip.setPixelColor(0, 0, 255, 0);
 		index = 7;
 	}
-	// ooo
-	// o o
 	// oxo
-	else if (directions >= 167.5 || directions <= -167.5)
+	// o o
+	// ooo
+	else if (directions >= 337.5 || directions <= 22.5)
 	{
-		strip.setPixelColor(17, 0, 255, 0);
-		index = 4;
+		strip.setPixelColor(1, 0, 255, 0);
+		index = 0;
 	}
 }
 int IndexArray[8] = { 1,2,10,18,17,16,8,0 };
@@ -472,9 +489,9 @@ void SetFlagNeo()
 #pragma endregion
 #pragma region DistanceNeoLight
 
-int16_t DistanceToFlag = 0;
+float DistanceToFlag = 0;
 /*Sets the DistanceToFlag equal to kek*/
-void SetDistanceToFlag(int16_t kek)
+void SetDistanceToFlag(float kek)
 {
 	DistanceToFlag = kek;
 }
@@ -565,7 +582,7 @@ void getGPSMessage(void) {
 				}
 
 				// else valid message
-				
+
 				// Status code check
 				if (cstr[18] != 'A') {
 					x = 0;
@@ -573,7 +590,7 @@ void getGPSMessage(void) {
 				}
 				break;
 			}
-    }
+		}
 	}
 }
 
@@ -610,8 +627,8 @@ void getGPSMessage(void) {
 
 	memcpy(cstr, "$GPRMC,064951.000,A,2307.1256,N,12016.4438,E,0.03,165.48,260406,3.05,W,A*2C", sizeof(cstr));
 
-  TERM.println("CSTR: ");
-  TERM.println(cstr);
+	TERM.println("CSTR: ");
+	TERM.println(cstr);
 
 	return;
 }
@@ -620,26 +637,26 @@ void getGPSMessage(void) {
 
 void setup(void) {
 
-	strip.setBrightness(10);
+	strip.setBrightness(50);
 #if TRM_ON
 	// init Terminal interface
-  Serial.begin(9600);
+	Serial.begin(9600);
 #endif	
 
 #if ONE_ON
 	// init OneShield Shield
-  OneSheeld.begin();
+	OneSheeld.begin();
 #endif
 
 #if NEO_ON
 	// init NeoPixel Shield
 
-  pinMode(6, OUTPUT);
+	pinMode(6, OUTPUT);
 
-  FLAGS KTarget;
-  KTarget.lat = GEOLAT0;
-  KTarget.lon = GEOLON0;
-  flagsdata[0] = KTarget;
+	FLAGS KTarget;
+	KTarget.lat = GEOLAT0;
+	KTarget.lon = GEOLON0;
+	flagsdata[0] = KTarget;
 #endif	
 
 #if SDC_ON
@@ -649,31 +666,33 @@ void setup(void) {
 	sequential number of the file.  The filename can not be more than 8
 	chars in length (excluding the ".txt").
 	*/
-  if (!SD.begin()) {
-    cardEnabled = false;
-    Serial.println("SD Disabled.");
-  } else {
-    for (uint8_t i = 0; i < 100; i++) {
-      char file[12] = "\0";
-      Serial.print(i);
-      sprintf(file, "MyFile%i.txt", i);
-      if (SD.exists(file)) {
-        if (i == 99) {
-          cardEnabled = false;
-        }
-        continue;
-      } else {
-        TERM.print(file);
-        TERM.println(" successfully opened.");
-        MyFile = SD.open(file, FILE_WRITE);
-        if (!MyFile) {
-          TERM.println("Plot twist! it failed!");
-		      cardEnabled = false;
-        }
-        break;
-      }
-    }
-  }
+	if (!SD.begin()) {
+		cardEnabled = false;
+		Serial.println("SD Disabled.");
+	}
+	else {
+		for (uint8_t i = 0; i < 100; i++) {
+			char file[12] = "\0";
+			Serial.print(i);
+			sprintf(file, "MyFile%i.txt", i);
+			if (SD.exists(file)) {
+				if (i == 99) {
+					cardEnabled = false;
+				}
+				continue;
+			}
+			else {
+				TERM.print(file);
+				TERM.println(" successfully opened.");
+				MyFile = SD.open(file, FILE_WRITE);
+				if (!MyFile) {
+					TERM.println("Plot twist! it failed!");
+					cardEnabled = false;
+				}
+				break;
+			}
+		}
+	}
 #endif
 
 #if GPS_ON
@@ -685,11 +704,11 @@ void setup(void) {
 	gps.println(PMTK_SET_NMEA_OUTPUT_RMC);
 
 #endif		
-	memset(dmLat,  0, 11);
-	memset(dmLon,  0, 11);
-  memset(bearing, 0, 7);
+	memset(dmLat, 0, 11);
+	memset(dmLon, 0, 11);
+	memset(bearing, 0, 7);
 	// init target button here
-  pinMode(Button, INPUT_PULLUP);
+	pinMode(Button, INPUT_PULLUP);
 }
 
 //debounce funtion for button
@@ -706,7 +725,7 @@ bool PreviousButtonState = false;
 void loop(void) {
 	// if button pressed, set new target
 
-	if(debounce(Button))
+	if (debounce(Button))
 	{
 		if (PreviousButtonState == false)
 		{
@@ -728,7 +747,7 @@ void loop(void) {
 		if (!parseGPS()) {
 			break;
 		}
-
+		
 		currentheading = GPS2floatbearing(bearing);
 		currentlat = degMin2DecDeg(&dirNS, dmLat);
 		currentlon = degMin2DecDeg(&dirEW, dmLon);
@@ -736,18 +755,25 @@ void loop(void) {
 		heading = calcBearing(currentlat, currentlon, flagsdata[FlagIndex].lat, flagsdata[FlagIndex].lon, currentheading);
 		// calculated destination distance
 		distance = calcDistance(currentlat, currentlon, flagsdata[FlagIndex].lat, flagsdata[FlagIndex].lon);
-		SetDistanceToFlag((int16_t)distance);
+		SetDistanceToFlag(distance);
+		
+
+		Serial.println(bearing);
+		Serial.println(heading);
+		Serial.println(distance);
+
+
 
 #if SDC_ON
 
 		// write current position to SecureDigital then flush
 		if (cardEnabled) {
-      MyFile.print(currentlon);
-      MyFile.print(",");
-      MyFile.print(currentlat);
-      MyFile.print(",");
-      MyFile.println(distance);
-      MyFile.flush();
+			MyFile.print(currentlon);
+			MyFile.print(",");
+			MyFile.print(currentlat);
+			MyFile.print(",");
+			MyFile.println(distance);
+			MyFile.flush();
 		}
 #endif
 
@@ -759,7 +785,7 @@ void loop(void) {
 	// set NeoPixel target display
 	setNeoPixel(heading, distance);
 #endif		
-	
+
 
 #if TRM_ON
 	// print debug information to Serial Terminal
