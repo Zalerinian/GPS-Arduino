@@ -223,24 +223,30 @@ float calcDistance(float flat1, float flon1, float flat2, float flon2) {
 
 
 
-	float rLAT = radians(flat1);
-	float rLAT2 = radians(flat2);
+	//////float rLAT = radians(flat1);
+	//////float rLAT2 = radians(flat2);
 
-	float latitude = radians(flat2 - flat1);
-	float lontude = radians(flon2 - flon1);
-
-
-	float VAR1 = pow(sin(latitude / 2.0f), 2) + cos(rLAT)*cos(rLAT2) * (pow(sin(lontude / 2.0f), 2));
-	float VAR2 = 2.0f * atan2(sqrt(VAR1), sqrt(1 - VAR1));
-
-	distance = 3959 * 5280 * VAR2;
-	
-	/*float radLatitudeDiff = (flat1 * M_PI / 180)) - (flat2 * M_PI / 180);
-	float radLongitudeDiff = (flon1 * M_PI / 180) - (flon2 * M_PI / 180);
+	//////float latitude = radians(flat2 - flat1);
+	//////float lontude = radians(flon2 - flon1);
 
 
-	distance = 2 * asin((sqrt(pow(sin(radLatitudeDiff / 2), 2) + cos(flat1 * M_PI / 180) * cos(flat2 * M_PI / 180) * pow(sin(radLongitudeDiff / 2), 2))));
-	distance = distance * 3959.00 * 5280;*/
+	//////float VAR1 = pow(sin(latitude / 2.0f), 2) + cos(rLAT)*cos(rLAT2) * (pow(sin(lontude / 2.0f), 2));
+	//////float VAR2 = 2.0f * atan2(sqrt(VAR1), sqrt(1 - VAR1));
+
+	//////distance = 3959 * 5280 * VAR2;
+
+
+	flat1 = radians(flat1);
+	flon1 = radians(flon1);
+	flat2 = radians(flat2);
+	flon2 = radians(flon2);
+
+	float radLatitudeDiff = flat2 - flat1;
+	float radLongitudeDiff = flon2 - flon1;
+
+	float a = sin(radLatitudeDiff / 2.00) * sin(radLatitudeDiff / 2.00) + cos(flat1) * cos(flat2) * sin(radLongitudeDiff / 2.00) * sin(radLongitudeDiff / 2.00);
+	float c = 2.00 * atan2(sqrt(a), sqrt(1.00 - a));
+	distance = c * 3959.00 * 5280.00;
 
 	return(distance);
 }
@@ -277,23 +283,28 @@ flat2, flon2 = second latitude and longitude coordinate in decimal degrees
 Return:
 angle in degrees from magnetic north
 **************************************************/
-float calcBearing(float flat1, float flon1, float flat2, float flon2, float originalbearing) {
+float calcBearing(float flat1, float flon1, float flat2, float flon2, float courseoverground) {
 	float bearing = 0.0;
 
 	// add code here
-	float y = sin(flon2 * M_PI / 180 - flon1 * M_PI / 180) * cos(flat2 * M_PI / 180);
-	float x = cos(flat1* M_PI / 180) * sin(flat2 * M_PI / 180) - sin(flat1* M_PI / 180) * cos(flat2 * M_PI / 180) * cos(flon2 * M_PI / 180 - flon1 * M_PI / 180);
-	bearing = (atan2(y, x) * 180) / M_PI;
 
+	flat1 = radians(flat1);
+	flon1 = radians(flon1);
+	flat2 = radians(flat2);
+	flon2 = radians(flon2);
+
+	float y = sin(flon2 - flon1 ) * cos(flat2);
+	float x = cos(flat1) * sin(flat2 ) - sin(flat1) * cos(flat2 ) * cos(flon2- flon1);
+	bearing = atan2(y, x) * RAD_TO_DEG;
+
+	bearing = bearing - courseoverground;
 	//change to 0-360:
 	if (bearing < 0.0) {
 		bearing += 360.0f;
 	}
 
-	if (bearing > originalbearing)
-		bearing = bearing - originalbearing;
-	else
-		bearing = 360.0f - (originalbearing - bearing);
+	if (bearing >= 360.0)
+		bearing -= 360.0f;
 
 	return(bearing);
 }
@@ -502,7 +513,7 @@ void SetDistanceToFlag(float kek)
 75+   feet		 :Blue
 40+   feet		 :Green
 10+   feet		 :Purple
-9-0   feet      :White
+9-0, -1, -2 ...   feet      :White
 */
 void SetDisNeo()
 {
@@ -519,8 +530,12 @@ void SetDisNeo()
 		strip.setPixelColor(22, 0, 255, 0);
 	else if (DistanceToFlag >= 10)
 		strip.setPixelColor(22, 241, 0, 241);
-	else
+	else if(DistanceToFlag >=0)
 		strip.setPixelColor(22, 255, 255, 255);
+	else
+	{
+		strip.setPixelColor(22, 0, 0, 0);
+	}
 }
 #pragma endregion
 
@@ -657,6 +672,24 @@ void setup(void) {
 	KTarget.lat = GEOLAT0;
 	KTarget.lon = GEOLON0;
 	flagsdata[0] = KTarget;
+
+
+	//FLAGS KTarget;
+	//KTarget.lat = 28.59627;
+	//KTarget.lon = -81.30653;
+	//flagsdata[0] = KTarget;
+	//FLAGS KTarget2;
+	//KTarget.lat = 28.59641;
+	//KTarget.lon = -81.30081;
+	//flagsdata[1] = KTarget;
+	//FLAGS KTarget3;
+	//KTarget.lat = 28.59208;
+	//KTarget.lon = -81.30407;
+	//flagsdata[2] = KTarget;
+	//FLAGS KTarget4;
+	//KTarget.lat = 28.59505;
+	//KTarget.lon = -81.30677;
+	//flagsdata[3] = KTarget;
 #endif	
 
 #if SDC_ON
@@ -747,7 +780,7 @@ void loop(void) {
 		if (!parseGPS()) {
 			break;
 		}
-		
+
 		currentheading = GPS2floatbearing(bearing);
 		currentlat = degMin2DecDeg(&dirNS, dmLat);
 		currentlon = degMin2DecDeg(&dirEW, dmLon);
@@ -756,11 +789,6 @@ void loop(void) {
 		// calculated destination distance
 		distance = calcDistance(currentlat, currentlon, flagsdata[FlagIndex].lat, flagsdata[FlagIndex].lon);
 		SetDistanceToFlag(distance);
-		
-
-		Serial.println(bearing);
-		Serial.println(heading);
-		Serial.println(distance);
 
 
 
@@ -789,6 +817,20 @@ void loop(void) {
 
 #if TRM_ON
 	// print debug information to Serial Terminal
+
+
+	Serial.print("Calc Lat:");
+	Serial.println(currentlat, 6);
+	Serial.print("Calc Lon:");
+	Serial.println(currentlon, 6);
+	Serial.print("Calc Bearing:");
+	Serial.println(bearing);
+	Serial.print("Calc Heading:");
+	Serial.println(heading, 6);
+	Serial.print("Calculated distance: ");
+	Serial.println(distance, 6);
+	Serial.print("Calculated bearing: ");
+	Serial.println(heading, 6);
 #endif		
 
 #if ONE_ON
